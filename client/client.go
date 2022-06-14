@@ -12,9 +12,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kungze/quic-tun/pkg/classifier"
 	"github.com/kungze/quic-tun/pkg/constants"
 	"github.com/kungze/quic-tun/pkg/handshake"
-	"github.com/kungze/quic-tun/pkg/restfulapi"
+
+	// "github.com/kungze/quic-tun/pkg/restfulapi"
+	"github.com/kungze/quic-tun/pkg/datastore"
 	"github.com/kungze/quic-tun/pkg/token"
 	"github.com/lucas-clemente/quic-go"
 	"k8s.io/klog/v2"
@@ -26,10 +29,11 @@ type ClientEndpoint struct {
 	TokenSource          token.TokenSourcePlugin
 	TlsConfig            *tls.Config
 	// Used to send tunnel status info to httpd(API) server
-	TunCh chan<- restfulapi.Tunnel
+	TunCh chan<- datastore.Tunnel
 }
 
 func (c *ClientEndpoint) Start() {
+	classifier.LoadDiscriminatorPlugin([]string{"Spice"})
 	// Dial server endpoint
 	session, err := quic.DialAddr(c.ServerEndpointSocket, c.TlsConfig, &quic.Config{KeepAlive: true})
 	if err != nil {
@@ -66,7 +70,7 @@ func (c *ClientEndpoint) Start() {
 				logger = logger.WithValues(constants.StreamID, stream.StreamID())
 				// Create a context argument for each new tunnel
 				ctx := context.WithValue(klog.NewContext(context.TODO(), logger), constants.CtxClientAppAddrKey, conn.RemoteAddr().String())
-				tunnelData := restfulapi.Tunnel{
+				tunnelData := datastore.Tunnel{
 					Uuid:               uuid.New(),
 					StreamID:           stream.StreamID(),
 					ClientAppAddr:      conn.RemoteAddr().String(),
@@ -78,7 +82,7 @@ func (c *ClientEndpoint) Start() {
 	}
 }
 
-func (c *ClientEndpoint) establishTunnel(ctx context.Context, conn *net.Conn, stream *quic.Stream, tunnelData *restfulapi.Tunnel) {
+func (c *ClientEndpoint) establishTunnel(ctx context.Context, conn *net.Conn, stream *quic.Stream, tunnelData *datastore.Tunnel) {
 	logger := klog.FromContext(ctx)
 	logger.Info("Establishing a new tunnel.")
 	// Sent token to server endpoint
@@ -90,16 +94,16 @@ func (c *ClientEndpoint) establishTunnel(ctx context.Context, conn *net.Conn, st
 	var wg sync.WaitGroup
 	wg.Add(2)
 	// Exchange packets between server endpoint and client application.
-	go c.clientToServer(logger, conn, stream, &wg)
 	go c.serverToClient(logger, conn, stream, &wg)
+	classifier.ProcessHeader(tunnelData, conn, stream)
+	go c.clientToServer(logger, conn, stream, &wg)
 	logger.Info("Tunnel established")
 	// Notify httpd(API) server a new tunnel was created
 	tunnelData.CreatedAt = time.Now().String()
-	tunnelData.Action = constants.Creation
-	c.TunCh <- *tunnelData
+	//c.TunCh <- *tunnelData
+	datastore.TunDataStore.Store(tunnelData.Uuid, *tunnelData)
 	wg.Wait()
-	tunnelData.Action = constants.Close
-	c.TunCh <- *tunnelData
+	datastore.TunDataStore.Delete(tunnelData.Uuid)
 }
 
 func (c *ClientEndpoint) handshake(ctx context.Context, stream *quic.Stream) error {
