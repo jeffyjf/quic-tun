@@ -92,7 +92,7 @@ root@127.0.0.1's password:
 
 ### quictun-client
 
-At client side, We address the token plugin as token source plugin, related command options ``--token-source-plugin``, ``--token-source``. Currently, ``quic-tun`` provide two type token source plugin: ``Fixed`` and ``File``.
+At client side, We address the token plugin as token source plugin, related command options ``--token-source-plugin``, ``--token-source``. Currently, ``quic-tun`` provide three type token source plugin: ``Fixed``, ``File`` and ``Http``.
 
 #### Fixed
 
@@ -104,7 +104,7 @@ Example:
 ./quictun-client --listen-on tcp:127.0.0.1:6500 --server-endpoint 172.18.31.36:7500 --token-source-plugin Fixed --token-source tcp:172.18.30.117:22
 ```
 
-### File
+#### File
 
 ``File`` token source plugin will read token from a file and return different token according to the client application's source address. The file path specified by ``--token-source``.
 
@@ -122,6 +122,30 @@ Example:
 
 ```console
 ./quictun-client --server-endpoint 127.0.0.1:7500 --token-source-plugin File --token-source /etc/quictun/tokenfile --listen-on tcp:172.18.31.36:6622
+```
+
+#### Http
+
+``Http`` token source plugin will get the token based on the URL configured by ``--token-source``.
+
+The ``Http`` token source plugin is requested as follows.
+
+```text
+http://172.18.31.36:8081/get?addr=192.168.110.116:61313
+```
+
+The ``--token-source`` should return data in the following format.
+
+```json
+{
+  "token": "tcp:172.27.130.202:5913"
+}
+```
+
+Example:
+
+```console
+./quictun-client --listen-on tcp:127.0.0.1:6500 --server-endpoint 172.18.31.36:7500 --token-source-plugin Http --token-source http://172.18.31.36:8081/get
 ```
 
 ### quictun-server
@@ -170,6 +194,10 @@ $ curl http://127.0.0.1:18086/tunnels | jq .
     "serverAppAddr": "172.18.31.97:22",
     "remoteEndpointAddr": "172.18.29.161:46706",
     "createdAt": "2022-06-21 11:44:05.074778434 +0800 CST m=+86.092908233",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "",
     "protocolProperties": null
   }
@@ -193,6 +221,10 @@ call the query API, you can get the below response:
     "serverAppAddr": "172.18.11.2:5915",
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:28.85774404 +0800 CST m=+47.535828999",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "spice",
     "protocolProperties": {
       "version": "2.2",
@@ -209,6 +241,10 @@ call the query API, you can get the below response:
     "serverAppAddr": "172.18.11.2:5915",
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:28.937090895 +0800 CST m=+47.615175866",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "spice",
     "protocolProperties": {
       "version": "2.2",
@@ -223,6 +259,10 @@ call the query API, you can get the below response:
     "serverAppAddr": "172.18.11.2:5915",
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:29.224234488 +0800 CST m=+47.902319441",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "spice",
     "protocolProperties": {
       "version": "2.2",
@@ -237,6 +277,10 @@ call the query API, you can get the below response:
     "serverAppAddr": "172.18.11.2:5915",
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:28.93269002 +0800 CST m=+47.610774997",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "spice",
     "protocolProperties": {
       "version": "2.2",
@@ -251,6 +295,10 @@ call the query API, you can get the below response:
     "serverAppAddr": "172.18.11.2:5915",
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:28.937563866 +0800 CST m=+47.615648836",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "spice",
     "protocolProperties": {
       "version": "2.2",
@@ -266,6 +314,10 @@ call the query API, you can get the below response:
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:29.223947759 +0800 CST m=+47.902032695",
     "protocol": "spice",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocolProperties": {
       "version": "2.2",
       "sessionId": "d0306d75",
@@ -279,6 +331,10 @@ call the query API, you can get the below response:
     "serverAppAddr": "172.18.11.2:5915",
     "remoteEndpointAddr": "172.18.29.161:56465",
     "createdAt": "2022-06-21 11:41:28.936673702 +0800 CST m=+47.614758657",
+    "serverTotalBytes": 1545,
+    "clientTotalBytes": 2221,
+    "serverSendRate": "0.00 kB/s",
+    "clientSendRate": "0.00 kB/s",
     "protocol": "spice",
     "protocolProperties": {
       "version": "2.2",
